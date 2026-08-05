@@ -1,5 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // This app is fully auth-gated (uses cookies() on every route).
+  // Prevent Next.js from attempting static optimisation on any page.
+  experimental: {
+    // Required for server actions / middleware cookie usage in Vercel builds
+  },
+  // All routes are dynamic – cookies() / headers() used throughout
+  // This prevents the "Dynamic server usage" build error on Vercel
+  output: undefined, // keep default (not 'export' or 'standalone')
+
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'czzlkgnekogmltbhzhvq.supabase.co' },
@@ -18,10 +27,10 @@ const nextConfig = {
       { protocol: 'https', hostname: '*.woolworths.co.za' },
       { protocol: 'https', hostname: '*.ackermans.co.za' },
     ],
-    // Allow raw URLs without strict domain check for external product images
     dangerouslyAllowSVG: false,
     unoptimized: false,
   },
 };
 
 module.exports = nextConfig;
+

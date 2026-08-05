@@ -3,6 +3,10 @@ import { createClient } from '@/lib/supabase/server';
 import AppNav from '@/components/layout/AppNav';
 import BudgetBanner from '@/components/budget/BudgetBanner';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+
 export default async function AppLayout({
   children,
 }: {
