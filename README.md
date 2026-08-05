@@ -60,7 +60,7 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) — you'll be redirected to the login page.
-
+or https://campus-shopper-y9c2.vercel.app/
 ---
 
 ## Environment Variables
