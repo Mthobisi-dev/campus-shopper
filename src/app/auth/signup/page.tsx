@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
-import { Eye, EyeOff, ShoppingBag, Loader2, GraduationCap } from 'lucide-react';
+import { Eye, EyeOff, ShoppingBag, Loader2, GraduationCap, Mail } from 'lucide-react';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -19,6 +19,7 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -39,7 +40,7 @@ export default function SignupPage() {
 
     setLoading(true);
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
       options: {
@@ -50,15 +51,55 @@ export default function SignupPage() {
       },
     });
 
-    if (error) {
-      setError(error.message);
+    if (signUpError) {
+      setError(signUpError.message);
       setLoading(false);
       return;
     }
 
-    // Redirect to onboarding to set up budget/location
-    router.push('/onboarding');
-    router.refresh();
+    // If session is immediately available → email confirmation is OFF → go to onboarding
+    if (data.session) {
+      router.push('/onboarding');
+      router.refresh();
+      return;
+    }
+
+    // Email confirmation is ON → show "check your inbox" message
+    setSuccess(true);
+    setLoading(false);
+  }
+
+  // ── Email confirmation pending ────────────────────────────────────
+  if (success) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 py-12">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-1/4 left-1/4 w-64 h-64 bg-blue-600/10 rounded-full blur-3xl" />
+        </div>
+        <div className="w-full max-w-md relative text-center">
+          <div className="glass-card p-10">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl mb-6 shadow-lg shadow-green-900/40 mx-auto">
+              <Mail className="w-8 h-8 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold mb-3">Check your inbox!</h2>
+            <p className="text-muted-foreground mb-2">
+              We sent a confirmation link to:
+            </p>
+            <p className="font-semibold text-primary mb-6">{form.email}</p>
+            <p className="text-sm text-muted-foreground mb-8">
+              Click the link in the email to activate your account, then come back here to sign in.
+            </p>
+            <Link
+              href="/auth/login"
+              className="btn-primary w-full flex items-center justify-center gap-2"
+            >
+              Go to Sign In
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -116,7 +157,7 @@ export default function SignupPage() {
 
             <div>
               <label className="block text-sm font-medium text-muted-foreground mb-1.5">
-                Student Email
+                Email Address
               </label>
               <input
                 id="signup-email"
@@ -124,10 +165,11 @@ export default function SignupPage() {
                 type="email"
                 value={form.email}
                 onChange={handleChange}
-                placeholder="studentno@dut4life.ac.za"
+                placeholder="you@example.com"
                 required
                 className="input-field"
               />
+              <p className="text-xs text-muted-foreground mt-1">Any valid email works — not just student email</p>
             </div>
 
             <div>
@@ -204,7 +246,7 @@ export default function SignupPage() {
 
         <div className="flex items-center justify-center gap-1 mt-6 text-sm text-muted-foreground">
           <GraduationCap className="w-4 h-4" />
-          <span>Made for DUT students in Durban</span>
+          <span>Made for students in South Africa</span>
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
--- ================================================================
--- CampusShopper v3.3 — 4th Normal Form (4NF) Database Schema
+﻿-- ================================================================
+-- CampusShopper v3.3 â€” 4th Normal Form (4NF) Database Schema
 -- Fixed: Added updated_at ALTER to pre-existing tables
 -- ================================================================
 
@@ -8,7 +8,7 @@ BEGIN;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
--- ── Ensure all columns exist on pre-existing tables & drop legacy arrays ─────
+-- â”€â”€ Ensure all columns exist on pre-existing tables & drop legacy arrays â”€â”€â”€â”€â”€
 DO $$ BEGIN
   -- Add missing product columns if products table pre-existed
   ALTER TABLE public.products ADD COLUMN IF NOT EXISTS product_url text;
@@ -33,7 +33,7 @@ DO $$ BEGIN
   ALTER TABLE public.preferences DROP COLUMN IF EXISTS fav_categories;
 EXCEPTION WHEN OTHERS THEN NULL; END $$;
 
--- ── VENDORS ──────────────────────────────────────────────────────
+-- â”€â”€ VENDORS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 CREATE TABLE IF NOT EXISTS public.vendors (
   id               uuid         PRIMARY KEY DEFAULT uuid_generate_v4(),
   name             text         NOT NULL,
@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS public.vendor_categories (
   PRIMARY KEY (vendor_id, category)
 );
 
--- ── PRODUCTS (4NF — no array columns) ────────────────────────────
+-- â”€â”€ PRODUCTS (4NF â€” no array columns) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 CREATE TABLE IF NOT EXISTS public.products (
   id                uuid          PRIMARY KEY DEFAULT uuid_generate_v4(),
   vendor_id         uuid          REFERENCES public.vendors(id) ON DELETE CASCADE,
@@ -88,7 +88,7 @@ CREATE TABLE IF NOT EXISTS public.product_sizes (
   PRIMARY KEY (product_id, size)
 );
 
--- ── PROFILES & PREFERENCES (4NF) ─────────────────────────────────
+-- â”€â”€ PROFILES & PREFERENCES (4NF) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 CREATE TABLE IF NOT EXISTS public.profiles (
   id                 uuid          PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   student_number     text          UNIQUE,
@@ -150,7 +150,7 @@ CREATE TABLE IF NOT EXISTS public.preference_categories (
   PRIMARY KEY (profile_id, category)
 );
 
--- ── FAVOURITES, PURCHASES, SEARCHES ───────────────────────────────
+-- â”€â”€ FAVOURITES, PURCHASES, SEARCHES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 CREATE TABLE IF NOT EXISTS public.favourites (
   id          uuid        PRIMARY KEY DEFAULT uuid_generate_v4(),
   profile_id  uuid        NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -188,7 +188,7 @@ CREATE TABLE IF NOT EXISTS public.searches (
   searched_at        timestamptz NOT NULL DEFAULT now()
 );
 
--- ── INDEXES ───────────────────────────────────────────────────────
+-- â”€â”€ INDEXES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 CREATE INDEX IF NOT EXISTS idx_products_vendor       ON public.products(vendor_id);
 CREATE INDEX IF NOT EXISTS idx_products_category     ON public.products(category);
 CREATE INDEX IF NOT EXISTS idx_products_price        ON public.products(price_zar);
@@ -209,7 +209,7 @@ CREATE INDEX IF NOT EXISTS idx_purchases_at          ON public.purchases(purchas
 CREATE INDEX IF NOT EXISTS idx_searches_profile       ON public.searches(profile_id);
 
 -- ================================================================
--- VIEWS (EXPLICIT COLUMNS — NO p.* or pr.* TO PREVENT DUPLICATES)
+-- VIEWS (EXPLICIT COLUMNS â€” NO p.* or pr.* TO PREVENT DUPLICATES)
 -- ================================================================
 
 CREATE OR REPLACE VIEW public.v_products AS
@@ -338,6 +338,7 @@ BEGIN
   END LOOP;
 END $$;
 
+
 CREATE POLICY "public_read_vendors"   ON public.vendors   FOR SELECT USING (true);
 CREATE POLICY "public_read_products"  ON public.products  FOR SELECT USING (true);
 
@@ -348,6 +349,40 @@ CREATE POLICY "svc_all_prefs"     ON public.preferences FOR ALL TO service_role 
 CREATE POLICY "svc_all_favs"      ON public.favourites  FOR ALL TO service_role USING (true) WITH CHECK (true);
 CREATE POLICY "svc_all_purchases" ON public.purchases   FOR ALL TO service_role USING (true) WITH CHECK (true);
 CREATE POLICY "svc_all_searches"  ON public.searches    FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+-- Authenticated users can manage their own data
+CREATE POLICY "own_profile_select" ON public.profiles    FOR SELECT TO authenticated USING (auth.uid() = id);
+CREATE POLICY "own_profile_insert" ON public.profiles    FOR INSERT TO authenticated WITH CHECK (auth.uid() = id);
+CREATE POLICY "own_profile_update" ON public.profiles    FOR UPDATE TO authenticated USING (auth.uid() = id);
+CREATE POLICY "own_prefs_select"   ON public.preferences FOR SELECT TO authenticated USING (auth.uid() = profile_id);
+CREATE POLICY "own_prefs_insert"   ON public.preferences FOR INSERT TO authenticated WITH CHECK (auth.uid() = profile_id);
+CREATE POLICY "own_prefs_update"   ON public.preferences FOR UPDATE TO authenticated USING (auth.uid() = profile_id);
+CREATE POLICY "own_favs_all"       ON public.favourites  FOR ALL TO authenticated USING (auth.uid() = profile_id) WITH CHECK (auth.uid() = profile_id);
+CREATE POLICY "own_purchases_all"  ON public.purchases   FOR ALL TO authenticated USING (auth.uid() = profile_id) WITH CHECK (auth.uid() = profile_id);
+CREATE POLICY "own_searches_all"   ON public.searches    FOR ALL TO authenticated USING (auth.uid() = profile_id) WITH CHECK (auth.uid() = profile_id);
+
+-- ================================================================
+-- AUTO-CREATE PROFILE ON SIGNUP
+-- This trigger fires every time a new user signs up via Supabase Auth
+-- ================================================================
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  INSERT INTO public.profiles (id, student_number, display_name)
+  VALUES (
+    NEW.id,
+    NEW.raw_user_meta_data->>'student_number',
+    COALESCE(NEW.raw_user_meta_data->>'display_name', split_part(NEW.email, '@', 1))
+  )
+  ON CONFLICT (id) DO NOTHING;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 NOTIFY pgrst, 'reload schema';
 
