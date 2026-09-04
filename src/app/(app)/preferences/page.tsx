@@ -54,46 +54,47 @@ export default function PreferencesPage() {
   const [aiTip, setAiTip] = useState<string | null>(null);
   const [trainingAi, setTrainingAi] = useState(false);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setLoading(false);
+          return;
+        }
 
-  async function loadData() {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+        // Try fetching via /api/profile endpoint for resilient fallback
+        const res = await fetch(`/api/profile?userId=${user.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          const prof = data.profile;
+          const prefs = data.preferences;
+
+          if (prof) {
+            setDisplayName(prof.display_name || user.email?.split('@')[0] || 'DUT Student');
+            setStudentNumber(prof.student_number || 'DUT-2026-001');
+            setUniversity(prof.university || 'Durban University of Technology');
+            setSuburb(prof.suburb || 'Glenwood');
+            setMonthlyBudget(prof.monthly_budget_zar !== undefined ? prof.monthly_budget_zar : 1500);
+            setBudgetResetDay(prof.budget_reset_day || 1);
+          }
+          if (prefs) {
+            setInterests(prefs.interests || ['tech', 'cooking']);
+            setFavColours(prefs.fav_colours || ['black', 'navy']);
+            setFavSizes(prefs.fav_sizes || ['M']);
+            setMaxShipping(prefs.max_shipping_zar !== undefined ? prefs.max_shipping_zar : 100);
+            setMaxDistance(prefs.max_distance_km !== undefined ? prefs.max_distance_km : 50);
+            if (prefs.ai_persona_summary) setAiPersonaSummary(prefs.ai_persona_summary);
+          }
+        }
+      } catch (err) {
+        console.warn('Load data fallback:', err);
+      } finally {
         setLoading(false);
-        return;
       }
-
-      // Try fetching via /api/profile endpoint for resilient fallback
-      const res = await fetch(`/api/profile?userId=${user.id}`);
-      if (res.ok) {
-        const data = await res.json();
-        const prof = data.profile;
-        const prefs = data.preferences;
-
-        if (prof) {
-          setDisplayName(prof.display_name || user.email?.split('@')[0] || 'DUT Student');
-          setStudentNumber(prof.student_number || 'DUT-2026-001');
-          setUniversity(prof.university || 'Durban University of Technology');
-          setSuburb(prof.suburb || 'Glenwood');
-          setMonthlyBudget(prof.monthly_budget_zar !== undefined ? prof.monthly_budget_zar : 1500);
-          setBudgetResetDay(prof.budget_reset_day || 1);
-        }
-        if (prefs) {
-          setInterests(prefs.interests || ['tech', 'cooking']);
-          setFavColours(prefs.fav_colours || ['black', 'navy']);
-          setFavSizes(prefs.fav_sizes || ['M']);
-          setMaxShipping(prefs.max_shipping_zar !== undefined ? prefs.max_shipping_zar : 100);
-          setMaxDistance(prefs.max_distance_km !== undefined ? prefs.max_distance_km : 50);
-          if (prefs.ai_persona_summary) setAiPersonaSummary(prefs.ai_persona_summary);
-        }
-      }
-    } catch (err) {
-      console.warn('Load data fallback:', err);
-    } finally {
-      setLoading(false);
     }
-  }
+    loadData();
+  }, []);
 
   async function handleSave() {
     setSaving(true);
