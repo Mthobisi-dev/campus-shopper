@@ -3,12 +3,19 @@
 import Link from 'next/link';
 import { ShieldCheck, LogOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 
 export default function AdminHeader({ adminName }: { adminName: string }) {
   const router = useRouter();
 
   async function handleLogout() {
-    await fetch('/api/admin/auth', { method: 'DELETE' });
+    try {
+      await fetch('/api/admin/auth', { method: 'DELETE' });
+      const supabase = createClient();
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
     router.push('/admin/login');
     router.refresh();
   }

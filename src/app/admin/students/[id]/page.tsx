@@ -244,14 +244,29 @@ export default function AdminStudentPage() {
                       className="w-full bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-3 pl-8 text-xl font-bold focus:outline-none focus:ring-2 focus:ring-red-500"
                     />
                   </div>
-                  <div className="flex gap-2 mt-2 flex-wrap">
-                    {[500, 750, 1000, 1500, 2000, 3000].map((preset) => (
+                  <div className="flex gap-2 mt-2.5 flex-wrap items-center">
+                    <span className="text-xs text-gray-500 font-medium mr-1">Presets:</span>
+                    {[500, 1000, 1347.50, 1500, 2000, 2500, 3000].map((preset) => (
                       <button
                         key={preset}
+                        type="button"
                         onClick={() => setNewBudget(String(preset))}
-                        className={`px-3 py-1 rounded-lg text-xs transition ${Number(newBudget) === preset ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                        className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${Number(newBudget) === preset ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
                       >
                         R{preset}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-2 mt-2 flex-wrap items-center">
+                    <span className="text-xs text-gray-500 font-medium mr-1">Quick Add:</span>
+                    {[100, 250, 500, 1000].map((inc) => (
+                      <button
+                        key={inc}
+                        type="button"
+                        onClick={() => setNewBudget((prev) => String((parseFloat(prev) || 0) + inc))}
+                        className="px-2.5 py-1 rounded-lg text-xs bg-emerald-950/60 text-emerald-400 border border-emerald-800/60 hover:bg-emerald-900/60 font-semibold transition"
+                      >
+                        +{formatZAR(inc)}
                       </button>
                     ))}
                   </div>
