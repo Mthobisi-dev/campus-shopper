@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  devIndicators: false,
   // This app is fully auth-gated (uses cookies() on every route).
   // Prevent Next.js from attempting static optimisation on any page.
   experimental: {
