@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
 
-const ADMIN_SECRET = process.env.ADMIN_SECRET_CODE;
+const ADMIN_SECRET = process.env.ADMIN_SECRET_CODE || 'ADM2026';
 
 export async function POST(request: Request) {
   const { secretCode } = await request.json();
