@@ -4,8 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Users, Search, TrendingUp, Wallet, AlertTriangle,
-  ChevronRight, RefreshCw, GraduationCap, CheckCircle2,
+  ChevronRight, RefreshCw, GraduationCap, CheckCircle2, LogOut,
 } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
 
 interface Student {
   id: string;
@@ -27,6 +28,18 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'budget' | 'spent' | 'remaining'>('name');
+
+  async function handleLogout() {
+    try {
+      await fetch('/api/admin/auth', { method: 'DELETE' });
+      const supabase = createClient();
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
+    router.push('/admin/login');
+    router.refresh();
+  }
 
   const loadStudents = useCallback(async () => {
     setLoading(true);
@@ -86,13 +99,23 @@ export default function AdminDashboardPage() {
           <h1 className="text-2xl font-bold text-white">Student Accounts</h1>
           <p className="text-gray-400 text-sm mt-0.5">Manage budgets and monitor spending</p>
         </div>
-        <button
-          onClick={loadStudents}
-          className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-xl text-sm text-gray-300 transition"
-        >
-          <RefreshCw className="w-4 h-4" />
-          Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={loadStudents}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-xl text-sm text-gray-300 transition"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
+          <button
+            onClick={handleLogout}
+            id="btn-admin-dashboard-logout"
+            className="flex items-center gap-2 px-4 py-2 bg-red-950/80 hover:bg-red-900 border border-red-800/80 rounded-xl text-sm font-semibold text-red-300 shadow-md transition"
+          >
+            <LogOut className="w-4 h-4 text-red-400" />
+            Log Out
+          </button>
+        </div>
       </div>
 
       {/* Stats */}

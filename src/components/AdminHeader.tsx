@@ -48,11 +48,11 @@ export default function AdminHeader({ adminName }: { adminName: string }) {
         <button
           onClick={handleLogout}
           type="button"
-          className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-red-400 transition px-3 py-1.5 rounded-lg hover:bg-gray-800"
-          id="admin-logout"
+          className="flex items-center gap-2 text-xs font-semibold text-red-300 bg-red-950/70 border border-red-800/80 hover:bg-red-900/80 px-3.5 py-2 rounded-xl transition shadow-md"
+          id="admin-logout-btn"
         >
-          <LogOut className="w-4 h-4" />
-          Logout
+          <LogOut className="w-4 h-4 text-red-400" />
+          Log Out Admin
         </button>
       </div>
     </header>
