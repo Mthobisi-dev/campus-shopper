@@ -94,10 +94,11 @@ export async function POST(req: NextRequest) {
     const { userId, profile, preferences } = body;
     if (!userId) return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
 
-    // Update scalar profile fields
+    // Update scalar profile fields (budget fields can only be set by admins via admin API)
     if (profile) {
+      const { monthly_budget_zar, budget_reset_day, ...safeProfile } = profile;
       await supabaseAdmin.from('profiles').upsert(
-        { id: userId, ...profile, updated_at: new Date().toISOString() },
+        { id: userId, ...safeProfile, updated_at: new Date().toISOString() },
         { onConflict: 'id' }
       );
     }

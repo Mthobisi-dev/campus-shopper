@@ -360,65 +360,36 @@ export default function PreferencesPage() {
           </>
         )}
 
-        {/* ── TAB 2: BUDGET ────────────────────────────────────── */}
+        {/* ── TAB 2: BUDGET (Read-only for Students) ────────────────── */}
         {activeTab === 'budget' && (
           <div className="glass-card p-5 space-y-5">
-            <h2 className="font-semibold flex items-center gap-2 text-base"><Wallet className="w-4 h-4 text-green-400" /> Monthly Budget Settings</h2>
-
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">
-                Monthly Budget (ZAR) — Supports Odd & Even amounts
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-muted-foreground">R</span>
-                <input
-                  id="pref-budget"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={monthlyBudget}
-                  onChange={(e) => setMonthlyBudget(e.target.value)}
-                  placeholder="1500.00"
-                  className="input-field pl-8 font-bold text-lg text-green-400"
-                />
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Set any exact value, e.g. R1347.50 or R1500</p>
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold flex items-center gap-2 text-base">
+                <Wallet className="w-4 h-4 text-green-400" /> Monthly Budget Balance
+              </h2>
+              <span className="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-semibold flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5" /> Admin Managed
+              </span>
             </div>
 
-            {/* Quick Presets */}
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-2">Quick Presets</label>
-              <div className="grid grid-cols-4 gap-2">
-                {[1000, 1347, 1500, 2500].map((amt) => (
-                  <button
-                    key={amt}
-                    type="button"
-                    onClick={() => setMonthlyBudget(amt)}
-                    className={`py-2 rounded-xl text-xs font-semibold border transition-all ${
-                      Number(monthlyBudget) === amt
-                        ? 'bg-green-500/20 border-green-500 text-green-400'
-                        : 'bg-secondary border-border text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    R{amt}
-                  </button>
-                ))}
-              </div>
+            <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl space-y-1.5 text-xs text-amber-200">
+              <p className="font-semibold flex items-center gap-1.5 text-amber-300 text-sm">
+                <ShieldCheck className="w-4 h-4 text-amber-400" /> Account Balance Controlled by Campus Admin
+              </p>
+              <p>
+                To maintain accurate financial aid, bursary, and campus stipend records, student account balances can only be updated by designated administrators.
+              </p>
             </div>
 
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">
-                Budget Reset Day of Month
-              </label>
-              <select
-                value={budgetResetDay}
-                onChange={(e) => setBudgetResetDay(Number(e.target.value))}
-                className="input-field"
-              >
-                {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
-                  <option key={d} value={d}>Day {d} of every month</option>
-                ))}
-              </select>
+            <div className="p-4 bg-secondary/60 rounded-xl space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Current Monthly Budget</span>
+                <span className="font-bold text-2xl text-green-400">{formatZAR(Number(monthlyBudget))}</span>
+              </div>
+              <div className="flex items-center justify-between pt-2 border-t border-border/50 text-xs text-muted-foreground">
+                <span>Budget Reset Schedule</span>
+                <span className="font-medium text-foreground">Day {budgetResetDay} of every month</span>
+              </div>
             </div>
           </div>
         )}

@@ -12,7 +12,7 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
+        setAll(cookiesToSet: Array<{ name: string; value: string; options?: object }>) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           supabaseResponse = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
@@ -24,12 +24,29 @@ export async function middleware(request: NextRequest) {
   );
 
   const { data: { user } } = await supabase.auth.getUser();
-
   const { pathname } = request.nextUrl;
 
-  // Redirect unauthenticated users from protected routes
+  // ── Admin routes ──────────────────────────────────────────────
+  const isAdminRoute = pathname.startsWith('/admin');
+  const isAdminLogin = pathname === '/admin/login';
+
+  if (isAdminRoute && !isAdminLogin) {
+    // Must have both Supabase session AND admin_verified cookie
+    const adminVerified = request.cookies.get('admin_verified');
+    if (!user || !adminVerified) {
+      return NextResponse.redirect(new URL('/admin/login', request.url));
+    }
+  }
+
+  // Logged-in admin trying to access /admin/login → send to admin dashboard
+  if (isAdminLogin && user && request.cookies.get('admin_verified')) {
+    return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+  }
+
+  // ── Student routes ────────────────────────────────────────────
   const isProtected =
     !pathname.startsWith('/auth') &&
+    !pathname.startsWith('/admin') &&
     !pathname.startsWith('/api') &&
     !pathname.startsWith('/_next') &&
     !pathname.startsWith('/favicon') &&
@@ -39,7 +56,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/auth/login', request.url));
   }
 
-  // Redirect authenticated users away from auth pages
+  // Redirect authenticated students away from auth pages
   if (user && pathname.startsWith('/auth')) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }

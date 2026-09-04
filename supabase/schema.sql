@@ -1,4 +1,4 @@
-﻿-- ================================================================
+-- ================================================================
 -- CampusShopper v3.3 â€” 4th Normal Form (4NF) Database Schema
 -- Fixed: Added updated_at ALTER to pre-existing tables
 -- ================================================================
@@ -106,6 +106,14 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   phone              text,
   created_at         timestamptz   NOT NULL DEFAULT now(),
   updated_at         timestamptz   NOT NULL DEFAULT now()
+);
+
+-- ── ADMINS ────────────────────────────────────────────────────────
+-- Only users listed here can access /admin and modify student budgets
+CREATE TABLE IF NOT EXISTS public.admins (
+  id           uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  display_name text NOT NULL DEFAULT 'Administrator',
+  created_at   timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS public.preferences (
@@ -330,6 +338,7 @@ ALTER TABLE public.preferences          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.favourites           ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.purchases            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.searches             ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.admins               ENABLE ROW LEVEL SECURITY;
 
 DO $$ DECLARE r record;
 BEGIN
@@ -337,7 +346,6 @@ BEGIN
     EXECUTE format('DROP POLICY IF EXISTS %I ON %I.%I', r.policyname, r.schemaname, r.tablename);
   END LOOP;
 END $$;
-
 
 CREATE POLICY "public_read_vendors"   ON public.vendors   FOR SELECT USING (true);
 CREATE POLICY "public_read_products"  ON public.products  FOR SELECT USING (true);
@@ -349,17 +357,27 @@ CREATE POLICY "svc_all_prefs"     ON public.preferences FOR ALL TO service_role 
 CREATE POLICY "svc_all_favs"      ON public.favourites  FOR ALL TO service_role USING (true) WITH CHECK (true);
 CREATE POLICY "svc_all_purchases" ON public.purchases   FOR ALL TO service_role USING (true) WITH CHECK (true);
 CREATE POLICY "svc_all_searches"  ON public.searches    FOR ALL TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY "svc_all_admins"    ON public.admins      FOR ALL TO service_role USING (true) WITH CHECK (true);
 
--- Authenticated users can manage their own data
+-- Authenticated students: select + limited update (NO budget update)
 CREATE POLICY "own_profile_select" ON public.profiles    FOR SELECT TO authenticated USING (auth.uid() = id);
 CREATE POLICY "own_profile_insert" ON public.profiles    FOR INSERT TO authenticated WITH CHECK (auth.uid() = id);
-CREATE POLICY "own_profile_update" ON public.profiles    FOR UPDATE TO authenticated USING (auth.uid() = id);
+-- Students can update their own profile BUT NOT monthly_budget_zar (enforced in API)
+CREATE POLICY "own_profile_update" ON public.profiles    FOR UPDATE TO authenticated
+  USING (auth.uid() = id)
+  WITH CHECK (auth.uid() = id);
 CREATE POLICY "own_prefs_select"   ON public.preferences FOR SELECT TO authenticated USING (auth.uid() = profile_id);
 CREATE POLICY "own_prefs_insert"   ON public.preferences FOR INSERT TO authenticated WITH CHECK (auth.uid() = profile_id);
 CREATE POLICY "own_prefs_update"   ON public.preferences FOR UPDATE TO authenticated USING (auth.uid() = profile_id);
 CREATE POLICY "own_favs_all"       ON public.favourites  FOR ALL TO authenticated USING (auth.uid() = profile_id) WITH CHECK (auth.uid() = profile_id);
 CREATE POLICY "own_purchases_all"  ON public.purchases   FOR ALL TO authenticated USING (auth.uid() = profile_id) WITH CHECK (auth.uid() = profile_id);
 CREATE POLICY "own_searches_all"   ON public.searches    FOR ALL TO authenticated USING (auth.uid() = profile_id) WITH CHECK (auth.uid() = profile_id);
+
+-- Admins can read their own admin record
+CREATE POLICY "admin_read_self"    ON public.admins      FOR SELECT TO authenticated USING (auth.uid() = id);
+-- Admins can read ALL student profiles (for the admin panel)
+CREATE POLICY "admin_read_profiles" ON public.profiles   FOR SELECT TO authenticated
+  USING (EXISTS (SELECT 1 FROM public.admins WHERE id = auth.uid()));
 
 -- ================================================================
 -- AUTO-CREATE PROFILE ON SIGNUP
