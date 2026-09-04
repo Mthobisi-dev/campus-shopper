@@ -341,6 +341,7 @@ export default function SearchPage() {
                   studentLng={profile?.lng || undefined}
                   initialFav={favouriteIds.has(product.id)}
                   remainingBudget={remainingBudget}
+                  budgetStrictness={(preferences?.ai_survey_answers as any)?.budgetStrictness || 'Strict'}
                   onBuy={handleBuy}
                   onFavouriteToggle={(id, isFav) => {
                     setFavouriteIds((prev) => {

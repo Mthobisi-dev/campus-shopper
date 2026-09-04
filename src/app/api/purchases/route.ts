@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required purchase details' }, { status: 400 });
     }
 
-    // Get user budget before purchase
+    // Get user profile & budget
     const { data: prof } = await supabaseAdmin
       .from('profiles')
       .select('monthly_budget_zar, budget_reset_day')
@@ -96,8 +96,68 @@ export async function POST(req: NextRequest) {
       .gte('purchased_at', periodStart.toISOString());
 
     const alreadySpent = (monthPurchases || []).reduce((s, p) => s + Number(p.total_zar), 0);
-    const budgetBefore = +(budget - alreadySpent).toFixed(2);
-    const budgetAfter  = +(budgetBefore - Number(totalZar)).toFixed(2);
+    const remainingBalance = Math.max(0, budget - alreadySpent);
+    const purchaseAmount = Number(totalZar);
+
+    // Fetch student's budget strictness preference from preferences
+    const { data: pref } = await supabaseAdmin
+      .from('preferences')
+      .select('ai_survey_answers')
+      .eq('profile_id', userId)
+      .maybeSingle();
+
+    const strictnessSetting = (pref?.ai_survey_answers as any)?.budgetStrictness || 'Strict';
+    const strictnessLower = String(strictnessSetting).toLowerCase();
+    const mode = strictnessLower.includes('flexible')
+      ? 'flexible'
+      : strictnessLower.includes('relaxed')
+      ? 'relaxed'
+      : 'strict';
+
+    // ── Real & Robust Enforcement Rules ───────────────────────
+    if (mode === 'strict') {
+      const maxAllowed70Pct = +(0.70 * remainingBalance).toFixed(2);
+      if (purchaseAmount > maxAllowed70Pct) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `AI Budget Guard (Strict Mode): Purchase blocked! Product price (R${purchaseAmount.toFixed(
+              2
+            )}) exceeds 70% of your remaining balance (R${remainingBalance.toFixed(
+              2
+            )}). Maximum allowed single purchase in Strict Mode is R${maxAllowed70Pct.toFixed(2)}.`,
+          },
+          { status: 400 }
+        );
+      }
+      if (purchaseAmount > remainingBalance) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `AI Budget Guard (Strict Mode): Purchase blocked! Purchase total of R${purchaseAmount.toFixed(
+              2
+            )} exceeds your remaining balance of R${remainingBalance.toFixed(2)}.`,
+          },
+          { status: 400 }
+        );
+      }
+    } else if (mode === 'flexible') {
+      if (purchaseAmount > remainingBalance) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `AI Budget Guard (Flexible Mode): Purchase blocked! Total of R${purchaseAmount.toFixed(
+              2
+            )} exceeds your remaining balance of R${remainingBalance.toFixed(2)}.`,
+          },
+          { status: 400 }
+        );
+      }
+    }
+    // Relaxed mode allows processing if balance allows, or passes through with warning
+
+    const budgetBefore = +remainingBalance.toFixed(2);
+    const budgetAfter  = +(budgetBefore - purchaseAmount).toFixed(2);
 
     const { data: purchase, error } = await supabaseAdmin
       .from('purchases')

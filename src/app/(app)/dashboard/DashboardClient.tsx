@@ -276,6 +276,7 @@ export default function DashboardClient(props: DashboardClientProps) {
                 studentLng={profile?.lng}
                 initialFav={favourites.some((f: any) => f.product_id === product.id)}
                 remainingBudget={remaining}
+                budgetStrictness={(preferences?.ai_survey_answers as any)?.budgetStrictness || 'Strict'}
                 onBuy={() => loadLiveDashboard()}
               />
             ))}

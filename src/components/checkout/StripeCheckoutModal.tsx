@@ -13,6 +13,7 @@ interface StripeCheckoutModalProps {
   product?: Product;
   items?: CartItem[];
   remainingBudget?: number;
+  budgetStrictness?: string;
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (chargeData: any, itemsPurchased?: CartItem[]) => void;
@@ -22,6 +23,7 @@ export default function StripeCheckoutModal({
   product,
   items,
   remainingBudget,
+  budgetStrictness = 'Strict',
   isOpen,
   onClose,
   onSuccess,
@@ -66,10 +68,24 @@ export default function StripeCheckoutModal({
     icon = CATEGORY_ICONS[product.category] || '📦';
   }
 
+  const safeRemaining = Math.max(0, remainingBudget ?? 0);
+  const strict70Limit = +(0.70 * safeRemaining).toFixed(2);
+  const strictnessLower = String(budgetStrictness).toLowerCase();
+  const mode = strictnessLower.includes('flexible')
+    ? 'flexible'
+    : strictnessLower.includes('relaxed')
+    ? 'relaxed'
+    : 'strict';
+
   const overBudget = remainingBudget !== undefined && remainingBudget !== null && totalCost > remainingBudget;
+  const isStrictBlocked = mode === 'strict' && remainingBudget !== undefined && remainingBudget !== null && (totalCost > strict70Limit || overBudget);
 
   async function handlePay(e: React.FormEvent) {
     e.preventDefault();
+    if (isStrictBlocked) {
+      setError(`🔴 AI Budget Guard (Strict Mode): BLOCKED! Total amount (R${totalCost.toFixed(2)}) exceeds 70% of your remaining balance (R${safeRemaining.toFixed(2)}). Maximum allowed single purchase is R${strict70Limit.toFixed(2)}.`);
+      return;
+    }
     setLoading(true);
     setError('');
 
@@ -213,12 +229,28 @@ export default function StripeCheckoutModal({
               )}
             </div>
 
-            {overBudget && (
+            {isStrictBlocked ? (
+              <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-bold block text-red-400">🔴 AI Budget Guard (Strict Mode Active)</span>
+                  <span className="text-[11px] leading-relaxed">
+                    Blocked! This purchase ({formatZAR(totalCost)}) exceeds 70% of your remaining balance ({formatZAR(safeRemaining)}).
+                    Maximum allowed single item/cart purchase in Strict Mode is <strong>{formatZAR(strict70Limit)}</strong>.
+                  </span>
+                </div>
+              </div>
+            ) : overBudget ? (
               <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>Notice: Total exceeds your remaining monthly budget!</span>
               </div>
-            )}
+            ) : mode === 'flexible' && totalCost > 0.85 * safeRemaining ? (
+              <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-xl text-yellow-400 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>🟡 AI Warning (Flexible Mode): Purchase takes up over 85% of remaining balance!</span>
+              </div>
+            ) : null}
 
             {error && (
               <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs">
@@ -291,11 +323,17 @@ export default function StripeCheckoutModal({
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={loading}
-              className="w-full py-3 rounded-xl btn-primary font-bold text-sm flex items-center justify-center gap-2 shadow-lg mt-4"
+              disabled={loading || isStrictBlocked}
+              className={`w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg mt-4 ${
+                isStrictBlocked
+                  ? 'bg-red-500/20 border border-red-500/30 text-red-400 cursor-not-allowed'
+                  : 'btn-primary'
+              }`}
             >
               {loading ? (
                 <><Loader2 className="w-4 h-4 animate-spin" /> Processing via Stripe...</>
+              ) : isStrictBlocked ? (
+                <><AlertCircle className="w-4 h-4" /> AI Guard Blocked (70% Threshold Exceeded)</>
               ) : (
                 <><ShieldCheck className="w-4 h-4" /> Pay {formatZAR(totalCost)} with Stripe</>
               )}

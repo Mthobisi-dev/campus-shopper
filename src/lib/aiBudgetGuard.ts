@@ -23,11 +23,23 @@ export interface AIBudgetAssessment {
 
 const ESSENTIAL_CATEGORIES = ['groceries', 'textbooks', 'toiletries', 'data', 'pharmacy', 'stationery'];
 
+export type BudgetStrictnessMode = 'strict' | 'flexible' | 'relaxed';
+
+export function getStrictnessMode(strictnessStr?: string): BudgetStrictnessMode {
+  if (!strictnessStr) return 'strict';
+  const lower = strictnessStr.toLowerCase();
+  if (lower.includes('strict')) return 'strict';
+  if (lower.includes('flexible')) return 'flexible';
+  if (lower.includes('relaxed')) return 'relaxed';
+  return 'strict';
+}
+
 export function analyzeCartWithAIBudgetGuard(
   cart: CartItem[],
   totalBudget: number,
   spentThisMonth: number,
-  budgetResetDay: number = 1
+  budgetResetDay: number = 1,
+  budgetStrictness: string = 'Strict'
 ): AIBudgetAssessment {
   const cartSubtotal = cart.reduce(
     (sum, item) => sum + (Number(item.product.price_zar) || 0) * item.quantity,
@@ -41,6 +53,9 @@ export function analyzeCartWithAIBudgetGuard(
 
   const remainingBudget = Math.max(0, totalBudget - spentThisMonth);
   const postPurchaseRemaining = +(remainingBudget - cartTotal).toFixed(2);
+  const strict70Limit = +(0.70 * remainingBudget).toFixed(2);
+
+  const mode = getStrictnessMode(budgetStrictness);
 
   // Calculate days remaining until next budget reset day
   const now = new Date();
@@ -75,9 +90,10 @@ export function analyzeCartWithAIBudgetGuard(
     }
   });
 
-  // Calculate suggested items to remove if over budget
+  // Calculate suggested items to remove if over budget or over strict 70% threshold
   const suggestedRemovals: CartItem[] = [];
-  let amountNeededToTrim = cartTotal - remainingBudget;
+  const maxAllowedCart = mode === 'strict' ? Math.min(remainingBudget, strict70Limit) : remainingBudget;
+  let amountNeededToTrim = cartTotal - maxAllowedCart;
 
   if (amountNeededToTrim > 0) {
     // First target non-essential items
@@ -117,59 +133,89 @@ export function analyzeCartWithAIBudgetGuard(
   const advicePoints: string[] = [];
   let canProceedToCheckout = true;
 
-  if (cartTotal > remainingBudget) {
-    riskLevel = 'critical';
-    canProceedToCheckout = false;
-    aiMessage = `🚨 AI Guard Intervened: Your cart total (R${cartTotal.toFixed(
-      2
-    )}) exceeds your available monthly budget of R${remainingBudget.toFixed(
-      2
-    )}. Payment is paused to prevent NSFAS allowance deficit.`;
-
-    advicePoints.push(
-      `Overbudget by R${(cartTotal - remainingBudget).toFixed(2)}. Trim discretionary items to proceed.`
-    );
-    if (discretionaryTotal > 0) {
-      advicePoints.push(
-        `Removing discretionary items (R${discretionaryTotal.toFixed(
-          2
-        )}) will free up your allowance.`
-      );
-    }
-    advicePoints.push(`Suggested action: Click 'AI Auto-Trim' to adjust your cart automatically.`);
-  } else if (dailyRunwayZar < 30 || budgetUsedPct >= 80) {
-    riskLevel = 'warning';
-    canProceedToCheckout = true;
-    aiMessage = `⚠️ AI Spending Alert: Buying these items leaves you with only R${dailyRunwayZar.toFixed(
-      2
-    )}/day for the next ${daysLeftInMonth} days until your allowance resets.`;
-
-    advicePoints.push(
-      `You will have used ${budgetUsedPct}% of your total R${totalBudget.toFixed(2)} budget.`
-    );
-    if (discretionaryTotal > 0) {
-      advicePoints.push(
-        `R${discretionaryTotal.toFixed(
-          2
-        )} of this cart is for non-essential items. Consider postponing these.`
-      );
-    }
-    advicePoints.push(
-      `Daily food & travel minimum target is R40/day in Durban. You are currently at R${dailyRunwayZar.toFixed(
+  if (mode === 'strict') {
+    if (cartTotal > strict70Limit) {
+      riskLevel = 'critical';
+      canProceedToCheckout = false;
+      aiMessage = `🔴 AI Budget Guard (Strict Mode): BLOCKED! Purchase of R${cartTotal.toFixed(
         2
-      )}/day.`
-    );
-  } else {
-    riskLevel = 'safe';
-    canProceedToCheckout = true;
-    aiMessage = `🛡️ AI Budget Guard Approved: Your cart is healthy! You will maintain a comfortable R${dailyRunwayZar.toFixed(
-      2
-    )}/day runway for the remaining ${daysLeftInMonth} days.`;
+      )} exceeds 70% of your available balance (R${remainingBudget.toFixed(
+        2
+      )}). Maximum allowed single purchase is R${strict70Limit.toFixed(2)}.`;
 
-    advicePoints.push(
-      `Essential purchases: ${Math.round((essentialTotal / (cartTotal || 1)) * 100)}% of cart.`
-    );
-    advicePoints.push(`Remaining budget after checkout: R${postPurchaseRemaining.toFixed(2)}.`);
+      advicePoints.push(
+        `Strict Mode Rule: Blocked because purchase exceeds 70% of available balance (Limit: R${strict70Limit.toFixed(2)}).`
+      );
+      if (discretionaryTotal > 0) {
+        advicePoints.push(
+          `Removing discretionary items (R${discretionaryTotal.toFixed(
+            2
+          )}) will bring your cart back under the 70% threshold.`
+        );
+      }
+      advicePoints.push(`Suggested action: Click 'AI Auto-Trim' to adjust your cart automatically.`);
+    } else if (cartTotal > remainingBudget) {
+      riskLevel = 'critical';
+      canProceedToCheckout = false;
+      aiMessage = `🔴 AI Budget Guard (Strict Mode): BLOCKED! Your cart total (R${cartTotal.toFixed(
+        2
+      )}) exceeds your available monthly budget of R${remainingBudget.toFixed(2)}.`;
+      advicePoints.push(`Over budget by R${(cartTotal - remainingBudget).toFixed(2)}.`);
+    } else if (dailyRunwayZar < 30 || budgetUsedPct >= 80) {
+      riskLevel = 'warning';
+      canProceedToCheckout = true;
+      aiMessage = `⚠️ AI Spending Alert (Strict Mode): Cart takes up R${cartTotal.toFixed(
+        2
+      )} leaving R${dailyRunwayZar.toFixed(2)}/day runway for the remaining ${daysLeftInMonth} days.`;
+      advicePoints.push(`Within 70% limit (R${strict70Limit.toFixed(2)}), but caution advised.`);
+    } else {
+      riskLevel = 'safe';
+      canProceedToCheckout = true;
+      aiMessage = `🛡️ AI Budget Guard (Strict Mode): APPROVED! Cart total R${cartTotal.toFixed(
+        2
+      )} is well within 70% limit (R${strict70Limit.toFixed(2)}) of your remaining balance.`;
+      advicePoints.push(`Remaining budget after checkout: R${postPurchaseRemaining.toFixed(2)}.`);
+    }
+  } else if (mode === 'flexible') {
+    if (cartTotal > remainingBudget) {
+      riskLevel = 'critical';
+      canProceedToCheckout = false;
+      aiMessage = `🚨 AI Budget Guard (Flexible Mode): BLOCKED! Cart total (R${cartTotal.toFixed(
+        2
+      )}) exceeds your available monthly budget of R${remainingBudget.toFixed(2)}.`;
+      advicePoints.push(`Over budget by R${(cartTotal - remainingBudget).toFixed(2)}.`);
+    } else if (cartTotal > 0.85 * remainingBudget) {
+      riskLevel = 'warning';
+      canProceedToCheckout = true;
+      aiMessage = `🟡 AI Budget Guard (Flexible Mode): Warning! Cart total of R${cartTotal.toFixed(
+        2
+      )} takes up over 85% of your remaining balance (R${remainingBudget.toFixed(2)}). Proceed with caution.`;
+      advicePoints.push(`Consider saving non-essentials for next month.`);
+    } else {
+      riskLevel = 'safe';
+      canProceedToCheckout = true;
+      aiMessage = `🛡️ AI Budget Guard (Flexible Mode): APPROVED! Cart total R${cartTotal.toFixed(
+        2
+      )} is within your available balance.`;
+      advicePoints.push(`Remaining budget after checkout: R${postPurchaseRemaining.toFixed(2)}.`);
+    }
+  } else {
+    // Relaxed mode
+    if (cartTotal > remainingBudget) {
+      riskLevel = 'warning';
+      canProceedToCheckout = true;
+      aiMessage = `🟢 AI Budget Guard (Relaxed Mode): Advisory — Cart total of R${cartTotal.toFixed(
+        2
+      )} is higher than your remaining balance of R${remainingBudget.toFixed(2)}.`;
+      advicePoints.push(`Relaxed mode allows proceeding, but monitor spending.`);
+    } else {
+      riskLevel = 'safe';
+      canProceedToCheckout = true;
+      aiMessage = `🟢 AI Budget Guard (Relaxed Mode): APPROVED! Cart total R${cartTotal.toFixed(
+        2
+      )} fits your remaining balance.`;
+      advicePoints.push(`Remaining budget after checkout: R${postPurchaseRemaining.toFixed(2)}.`);
+    }
   }
 
   return {
@@ -188,3 +234,4 @@ export function analyzeCartWithAIBudgetGuard(
     canProceedToCheckout,
   };
 }
+

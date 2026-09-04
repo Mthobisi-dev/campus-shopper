@@ -17,6 +17,7 @@ import { useCart } from '@/context/CartContext';
 interface ProductCardProps {
   product: Product;
   remainingBudget?: number;
+  budgetStrictness?: string;
   studentLat?: number;
   studentLng?: number;
   initialFav?: boolean;
@@ -43,6 +44,7 @@ const COLOUR_HEX: Record<string, string> = {
 export default function ProductCard({
   product,
   remainingBudget,
+  budgetStrictness = 'Strict',
   studentLat,
   studentLng,
   initialFav = false,
@@ -360,6 +362,7 @@ export default function ProductCard({
       <StripeCheckoutModal
         product={product}
         remainingBudget={remainingBudget}
+        budgetStrictness={budgetStrictness}
         isOpen={showStripeModal}
         onClose={() => setShowStripeModal(false)}
         onSuccess={handleStripeSuccess}

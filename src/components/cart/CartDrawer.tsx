@@ -30,6 +30,7 @@ export default function CartDrawer() {
   const [totalBudget, setTotalBudget] = useState(1500);
   const [spentThisMonth, setSpentThisMonth] = useState(0);
   const [budgetResetDay, setBudgetResetDay] = useState(1);
+  const [budgetStrictness, setBudgetStrictness] = useState('Strict');
   const [assessment, setAssessment] = useState<AIBudgetAssessment | null>(null);
   const [autoTrimming, setAutoTrimming] = useState(false);
   const [aiExpanded, setAiExpanded] = useState(true);
@@ -44,9 +45,11 @@ export default function CartDrawer() {
         const tb = Number(data.totalBudget) || 1500;
         const sp = Number(data.spent) || 0;
         const rd = Number(data.profile?.budget_reset_day) || 1;
+        const bs = (data.preferences?.ai_survey_answers as any)?.budgetStrictness || 'Strict';
         setTotalBudget(tb);
         setSpentThisMonth(sp);
         setBudgetResetDay(rd);
+        setBudgetStrictness(bs);
       }
     } catch (err) {
       console.error('Budget load error:', err);
@@ -70,15 +73,15 @@ export default function CartDrawer() {
     };
   }, [loadBudget]);
 
-  // Recompute AI assessment any time cart or budget changes
+  // Recompute AI assessment any time cart or budget or strictness changes
   useEffect(() => {
     if (cart.length === 0) {
       setAssessment(null);
       return;
     }
-    const result = analyzeCartWithAIBudgetGuard(cart, totalBudget, spentThisMonth, budgetResetDay);
+    const result = analyzeCartWithAIBudgetGuard(cart, totalBudget, spentThisMonth, budgetResetDay, budgetStrictness);
     setAssessment(result);
-  }, [cart, totalBudget, spentThisMonth, budgetResetDay]);
+  }, [cart, totalBudget, spentThisMonth, budgetResetDay, budgetStrictness]);
 
   if (!isOpen) return null;
 
@@ -462,6 +465,7 @@ export default function CartDrawer() {
       <StripeCheckoutModal
         items={cart}
         remainingBudget={remainingBudget}
+        budgetStrictness={budgetStrictness}
         isOpen={showStripeModal}
         onClose={() => setShowStripeModal(false)}
         onSuccess={handleCartCheckoutSuccess}

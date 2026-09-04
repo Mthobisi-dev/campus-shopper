@@ -85,6 +85,14 @@ export default function PreferencesPage() {
             setMaxShipping(prefs.max_shipping_zar !== undefined ? prefs.max_shipping_zar : 100);
             setMaxDistance(prefs.max_distance_km !== undefined ? prefs.max_distance_km : 50);
             if (prefs.ai_persona_summary) setAiPersonaSummary(prefs.ai_persona_summary);
+            if (prefs.ai_survey_answers) {
+              const sa = prefs.ai_survey_answers;
+              if (sa.spendingFocus) setSpendingFocus(sa.spendingFocus);
+              if (sa.shoppingVibe) setShoppingVibe(sa.shoppingVibe);
+              if (sa.styleDietary) setStyleDietary(sa.styleDietary);
+              if (sa.budgetStrictness) setBudgetStrictness(sa.budgetStrictness);
+              if (sa.customNotes) setCustomNotes(sa.customNotes);
+            }
           }
         }
       } catch (err) {
@@ -131,6 +139,13 @@ export default function PreferencesPage() {
             max_shipping_zar: numShipping,
             max_distance_km: numDistance,
             ai_persona_summary: aiPersonaSummary,
+            ai_survey_answers: {
+              spendingFocus,
+              shoppingVibe,
+              styleDietary,
+              budgetStrictness,
+              customNotes,
+            },
           },
         }),
       });
@@ -556,12 +571,15 @@ export default function PreferencesPage() {
                 <select
                   value={budgetStrictness}
                   onChange={(e) => setBudgetStrictness(e.target.value)}
-                  className="input-field"
+                  className="input-field font-medium"
                 >
-                  <option value="Strict Warning when near limit">🔴 Strict — Highlight and block over-budget items</option>
-                  <option value="Flexible Suggestion">🟡 Flexible — Warn but allow best-value purchases</option>
-                  <option value="Relaxed Advisor">🟢 Relaxed — Focus on quality deals first</option>
+                  <option value="Strict (Block items exceeding 70% of available balance)">🔴 Strict Mode — Block any item/cart exceeding 70% of remaining balance</option>
+                  <option value="Flexible Suggestion">🟡 Flexible Mode — Warn at 85% of balance, block when out of budget</option>
+                  <option value="Relaxed Advisor">🟢 Relaxed Mode — Purely advisory recommendations & best value deals</option>
                 </select>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  * In <strong>Strict Mode</strong>, AI automatically blocks purchases where total cost &gt; 70% of your remaining balance.
+                </p>
               </div>
 
               <div>
