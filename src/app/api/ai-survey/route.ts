@@ -41,7 +41,16 @@ Return ONLY a valid JSON object (no markdown formatting) with these exact keys:
     try {
       const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
       const result = await model.generateContent(prompt);
+
+      // Guard: check for empty/blocked response before calling .text()
+      const candidates = result.response.candidates;
+      if (!candidates || candidates.length === 0 || !candidates[0].content?.parts?.length) {
+        throw new Error('Gemini returned empty or blocked response');
+      }
+
       const text = result.response.text().trim();
+      if (!text) throw new Error('Gemini returned empty text');
+
       const cleaned = text.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
       const parsed = JSON.parse(cleaned);
 

@@ -41,7 +41,18 @@ Rules:
 - Return raw JSON only, no markdown fences`;
 
     const result = await model.generateContent(prompt);
+
+    // Guard: check for empty/blocked response before calling .text()
+    const candidates = result.response.candidates;
+    if (!candidates || candidates.length === 0 || !candidates[0].content?.parts?.length) {
+      console.warn('Gemini returned empty/blocked response, using local fallback');
+      return NextResponse.json(parseQueryLocally(query));
+    }
+
     const text = result.response.text().trim();
+    if (!text) {
+      return NextResponse.json(parseQueryLocally(query));
+    }
     const cleaned = text.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
     const parsed = JSON.parse(cleaned);
 
