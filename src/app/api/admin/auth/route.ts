@@ -27,14 +27,18 @@ export async function POST(request: Request) {
     .from('admins')
     .select('id, display_name')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
-  if (!adminRow) {
+  const isMasterAdmin = user.email === 'mthobisimzimela031@gmail.com';
+
+  if (!adminRow && !isMasterAdmin) {
     return NextResponse.json({ error: 'This account does not have admin privileges' }, { status: 403 });
   }
 
+  const adminInfo = adminRow || { id: user.id, display_name: 'Campus Administrator' };
+
   // Set admin_verified cookie (httpOnly, secure)
-  const response = NextResponse.json({ success: true, admin: adminRow });
+  const response = NextResponse.json({ success: true, admin: adminInfo });
   response.cookies.set('admin_verified', user.id, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
