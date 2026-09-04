@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,16 +17,31 @@ export async function GET(
   }
 
   const { id } = await params;
-  const supabase = await createClient();
 
-  const [{ data: profile }, { data: purchases }, { data: prefs }] = await Promise.all([
-    supabase.from('profiles').select('*').eq('id', id).single(),
-    supabase.from('purchases').select('*').eq('profile_id', id).order('purchased_at', { ascending: false }),
-    supabase.from('preferences').select('*').eq('profile_id', id).maybeSingle(),
+  let [{ data: profile }, { data: purchases }, { data: prefs }] = await Promise.all([
+    supabaseAdmin.from('profiles').select('*').eq('id', id).maybeSingle(),
+    supabaseAdmin.from('purchases').select('*').eq('profile_id', id).order('purchased_at', { ascending: false }),
+    supabaseAdmin.from('preferences').select('*').eq('profile_id', id).maybeSingle(),
   ]);
 
   if (!profile) {
-    return NextResponse.json({ error: 'Student not found' }, { status: 404 });
+    // If user exists in Auth but has no profile row, create default profile row
+    const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(id);
+    if (!authUser || !authUser.user) {
+      return NextResponse.json({ error: 'Student not found' }, { status: 404 });
+    }
+
+    const defaultProf = {
+      id: authUser.user.id,
+      display_name: authUser.user.user_metadata?.display_name || authUser.user.email?.split('@')[0] || 'DUT Student',
+      student_number: authUser.user.user_metadata?.student_number || `DUT-${authUser.user.id.slice(0, 6)}`,
+      university: 'Durban University of Technology',
+      suburb: 'Glenwood',
+      monthly_budget_zar: 1500,
+      budget_reset_day: 1,
+    };
+    await supabaseAdmin.from('profiles').upsert(defaultProf, { onConflict: 'id' });
+    profile = defaultProf;
   }
 
   return NextResponse.json({ profile, purchases: purchases || [], preferences: prefs });
@@ -57,8 +72,7 @@ export async function PATCH(
   if (display_name !== undefined) updatePayload.display_name = display_name;
   if (suburb !== undefined) updatePayload.suburb = suburb;
 
-  const supabase = await createClient();
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('profiles')
     .update(updatePayload)
     .eq('id', id)
