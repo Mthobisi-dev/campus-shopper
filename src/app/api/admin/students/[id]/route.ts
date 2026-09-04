@@ -10,18 +10,19 @@ function isAdminVerified(request: Request): boolean {
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   if (!isAdminVerified(request)) {
     return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
   }
 
+  const { id } = await params;
   const supabase = await createClient();
 
   const [{ data: profile }, { data: purchases }, { data: prefs }] = await Promise.all([
-    supabase.from('profiles').select('*').eq('id', params.id).single(),
-    supabase.from('purchases').select('*').eq('profile_id', params.id).order('purchased_at', { ascending: false }),
-    supabase.from('preferences').select('*').eq('profile_id', params.id).maybeSingle(),
+    supabase.from('profiles').select('*').eq('id', id).single(),
+    supabase.from('purchases').select('*').eq('profile_id', id).order('purchased_at', { ascending: false }),
+    supabase.from('preferences').select('*').eq('profile_id', id).maybeSingle(),
   ]);
 
   if (!profile) {
@@ -33,12 +34,13 @@ export async function GET(
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   if (!isAdminVerified(request)) {
     return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
   }
 
+  const { id } = await params;
   const body = await request.json();
   const { monthly_budget_zar, budget_reset_day, display_name, suburb } = body;
 
@@ -59,7 +61,7 @@ export async function PATCH(
   const { data, error } = await supabase
     .from('profiles')
     .update(updatePayload)
-    .eq('id', params.id)
+    .eq('id', id)
     .select()
     .single();
 
