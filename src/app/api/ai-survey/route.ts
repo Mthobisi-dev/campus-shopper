@@ -39,7 +39,7 @@ Return ONLY a valid JSON object (no markdown formatting) with these exact keys:
     let favKeywords: string[] = [];
 
     try {
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
       const result = await model.generateContent(prompt);
       const text = result.response.text().trim();
       const cleaned = text.replace(/```json?\n?/g, '').replace(/```/g, '').trim();
