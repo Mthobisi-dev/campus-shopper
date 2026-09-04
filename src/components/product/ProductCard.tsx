@@ -304,20 +304,20 @@ export default function ProductCard({
           )}
 
           {/* Action buttons */}
-          <div className="flex gap-2 mt-auto">
+          <div className="flex items-center gap-1.5 sm:gap-2 mt-auto pt-1">
             {/* Add to Cart */}
             <button
               id={`add-cart-${product.id}`}
               onClick={handleAddToCart}
               title="Add to Cart"
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
+              className={`flex-1 flex items-center justify-center gap-1 py-2.5 px-2 rounded-xl text-xs font-semibold transition-all duration-200 min-h-[40px] ${
                 addedFlash
                   ? 'bg-primary/20 border border-primary/50 text-primary'
                   : 'bg-secondary border border-border hover:bg-secondary/80 text-foreground'
               }`}
             >
-              <ShoppingCart className="w-4 h-4 text-primary" />
-              {addedFlash ? 'Added!' : 'Add to Cart'}
+              <ShoppingCart className="w-3.5 h-3.5 text-primary shrink-0" />
+              <span className="truncate">{addedFlash ? 'Added!' : 'Add'}</span>
             </button>
 
             {/* Direct Stripe Buy */}
@@ -325,7 +325,7 @@ export default function ProductCard({
               id={`buy-${product.id}`}
               onClick={handleOpenCheckout}
               disabled={buying}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
+              className={`flex-1 flex items-center justify-center gap-1 py-2.5 px-2 rounded-xl text-xs font-semibold transition-all duration-200 min-h-[40px] ${
                 bought
                   ? 'bg-green-500/20 border border-green-500/30 text-green-400'
                   : overBudget
@@ -334,11 +334,11 @@ export default function ProductCard({
               }`}
             >
               {buying ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</>
+                <><Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" /> <span className="truncate">Paying...</span></>
               ) : bought ? (
-                <><Package className="w-4 h-4" /> Purchased!</>
+                <><Package className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">Paid!</span></>
               ) : (
-                <><CreditCard className="w-4 h-4" /> {overBudget ? 'Pay' : `Buy ${formatZAR(totalCost)}`}</>
+                <><CreditCard className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">{overBudget ? 'Pay' : formatZAR(totalCost)}</span></>
               )}
             </button>
 
@@ -349,9 +349,9 @@ export default function ProductCard({
                 target="_blank"
                 rel="noopener noreferrer"
                 title="View on merchant site"
-                className="w-9 h-9 flex items-center justify-center rounded-xl bg-secondary border border-border hover:bg-secondary/80 text-muted-foreground hover:text-foreground transition-all"
+                className="w-9 h-9 flex items-center justify-center rounded-xl bg-secondary border border-border hover:bg-secondary/80 text-muted-foreground hover:text-foreground transition-all shrink-0 min-h-[40px]"
               >
-                <ExternalLink className="w-4 h-4" />
+                <ExternalLink className="w-3.5 h-3.5" />
               </a>
             )}
           </div>

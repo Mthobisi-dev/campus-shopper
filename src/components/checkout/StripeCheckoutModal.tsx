@@ -122,8 +122,8 @@ export default function StripeCheckoutModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
-      <div className="relative w-full max-w-md glass-card p-6 overflow-hidden border border-white/20 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-fade-in overflow-y-auto">
+      <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto glass-card p-5 sm:p-6 border border-white/20 shadow-2xl">
         {/* Close Button */}
         <button
           onClick={onClose}
