@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
-import { Eye, EyeOff, GraduationCap, ShoppingBag, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, GraduationCap, ShoppingBag, Loader2, ShieldCheck, UserCheck } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -42,17 +42,36 @@ export default function LoginPage() {
 
       <div className="w-full max-w-md relative">
         {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl mb-4 shadow-lg shadow-blue-900/50">
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl mb-3 shadow-lg shadow-blue-900/50">
             <ShoppingBag className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold gradient-text">CampusShopper</h1>
-          <p className="text-muted-foreground mt-1">Smart shopping for SA students</p>
+          <p className="text-muted-foreground mt-1 text-sm">Smart shopping for SA students & campus management</p>
+        </div>
+
+        {/* Login Role Selector Tabs */}
+        <div className="flex gap-2 p-1.5 bg-secondary/80 rounded-2xl mb-5 border border-white/10 shadow-sm">
+          <button
+            type="button"
+            className="flex-1 py-2.5 px-3 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 bg-primary text-white shadow-md"
+          >
+            <UserCheck className="w-4 h-4" />
+            Student Login
+          </button>
+          <Link
+            href="/admin/login"
+            id="role-switch-admin"
+            className="flex-1 py-2.5 px-3 rounded-xl font-semibold text-xs flex items-center justify-center gap-2 text-muted-foreground hover:text-white hover:bg-white/5 transition-all"
+          >
+            <ShieldCheck className="w-4 h-4 text-red-400" />
+            Admin Portal
+          </Link>
         </div>
 
         {/* Card */}
         <div className="glass-card p-8">
-          <h2 className="text-xl font-semibold mb-6">Welcome back</h2>
+          <h2 className="text-xl font-semibold mb-6">Welcome back, Student</h2>
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
@@ -112,7 +131,7 @@ export default function LoginPage() {
                   Signing in...
                 </>
               ) : (
-                'Sign In'
+                'Sign In as Student'
               )}
             </button>
           </form>
@@ -120,9 +139,21 @@ export default function LoginPage() {
           <p className="text-center text-sm text-muted-foreground mt-6">
             Don&apos;t have an account?{' '}
             <Link href="/auth/signup" className="text-primary hover:underline font-medium">
-              Create account
+              Create student account
             </Link>
           </p>
+
+          {/* Dedicated Admin Login Banner */}
+          <div className="mt-6 pt-5 border-t border-border/50 text-center">
+            <Link
+              href="/admin/login"
+              id="btn-admin-portal-link"
+              className="inline-flex items-center justify-center gap-2 text-xs font-semibold text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-xl px-4 py-2.5 transition-all w-full"
+            >
+              <ShieldCheck className="w-4 h-4 text-red-400" />
+              Campus Administrator? Sign in to Admin Portal →
+            </Link>
+          </div>
         </div>
 
         {/* Footer */}

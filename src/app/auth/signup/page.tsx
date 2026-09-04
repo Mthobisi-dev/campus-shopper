@@ -242,6 +242,15 @@ export default function SignupPage() {
               Sign in
             </Link>
           </p>
+
+          <div className="mt-6 pt-5 border-t border-border/50 text-center">
+            <Link
+              href="/admin/login"
+              className="inline-flex items-center justify-center gap-2 text-xs font-semibold text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-xl px-4 py-2.5 transition-all w-full"
+            >
+              🛡️ Campus Administrator? Sign in to Admin Portal →
+            </Link>
+          </div>
         </div>
 
         <div className="flex items-center justify-center gap-1 mt-6 text-sm text-muted-foreground">
