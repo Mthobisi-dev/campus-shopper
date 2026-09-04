@@ -139,8 +139,14 @@ export default function StripeCheckoutModal({
               <CheckCircle2 className="w-10 h-10" />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-green-400">Stripe Payment Successful!</h3>
-              <p className="text-xs text-muted-foreground mt-1">Transaction processed via Stripe Test Gateway</p>
+              <h3 className="text-xl font-bold text-green-400">
+                {successData.simulated ? '✅ Order Placed Successfully!' : 'Stripe Payment Successful!'}
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                {successData.simulated
+                  ? '🎭 Demo Mode — No real money charged'
+                  : 'Transaction processed via Stripe Test Gateway'}
+              </p>
             </div>
 
             <div className="bg-secondary/60 rounded-xl p-4 text-left text-xs space-y-2 font-mono border border-border">
